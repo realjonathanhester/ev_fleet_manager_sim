@@ -8,7 +8,7 @@ class ChargeWhenEmptyFleetManager(FleetManager):
         # if there's no job, don't charge. we only charge when we can't do a job
         if vehicle_job is None:
             return 0
-        # not enough charge to do job so use hour to charge instead of doing job
+        # if there's enough charge to do job, do it. otherwise, charge
         if active_vehicle.current_charge_kwh > vehicle_job.kwh_required:
             return 0
         available_charge_capacity_kwh = active_vehicle.vehicle_specs.capacity_kwh - active_vehicle.current_charge_kwh

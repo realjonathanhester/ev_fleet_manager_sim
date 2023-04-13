@@ -2,7 +2,8 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Dict, List
 
-from sim.models.active_vehicle import ActiveVehicle, VehicleActivity, VehicleChargeActivity, VehicleJobActivity
+from sim.models.active_vehicle import ActiveVehicle, VehicleActivity, VehicleChargeActivity, VehicleJobActivity, \
+    VehicleSkipJobActivity
 
 
 @dataclass
@@ -28,13 +29,12 @@ class FleetSimulationResult:
                     result.kwh_consumed += activity.amount_charged_kwh
                     result.kwh_cost_cents += activity.charge_cost_total_cents
                     result.number_charging_hours += 1
+                if isinstance(activity, VehicleSkipJobActivity):
+                    result.jobs_skipped += 1
                 if isinstance(activity, VehicleJobActivity):
-                    if activity.skipped:
-                        result.jobs_skipped += 1
-                    else:
-                        result.jobs_completed += 1
-                        result.kwh_consumed += activity.kwh_consumed
-                        result.amount_earned_dollars += activity.amount_earned
+                    result.jobs_completed += 1
+                    result.kwh_consumed += activity.kwh_consumed
+                    result.amount_earned_dollars += activity.amount_earned
 
         return result
 

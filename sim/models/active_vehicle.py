@@ -21,7 +21,11 @@ class VehicleJobActivity(VehicleActivity):
     hour: int
     amount_earned: int
     kwh_consumed: int
-    skipped: bool = False
+
+
+@dataclass
+class VehicleSkipJobActivity(VehicleActivity):
+    earnings_missed: int
 
 
 class ActiveVehicle:
@@ -34,7 +38,7 @@ class ActiveVehicle:
     def do_work(self, hour, vehicle_job: VehicleJob):
         if self.current_charge_kwh - vehicle_job.kwh_required <= 0:
             # not enough charge to do job so downtime
-            self.activities.append(VehicleJobActivity(hour, 0, 0, True))
+            self.activities.append(VehicleSkipJobActivity(vehicle_job.earning_opportunity_dollars))
             return
         self.current_charge_kwh = self.current_charge_kwh - vehicle_job.kwh_required
         self.activities.append(
@@ -45,7 +49,7 @@ class ActiveVehicle:
             )
         )
 
-    def do_charge(self, hour, charge_amount, charge_rate, kwh_cents_per_hour):
+    def do_charge(self, hour, charge_amount, charge_rate, kwh_cents_per_hour, vehicle_job_skipped: VehicleJob):
         if self.current_charge_kwh + charge_amount > self.vehicle_specs.capacity_kwh:
             raise Exception("trying to charge vehicle above capacity")
         # assuming time unit is hour. amount to charge is either the desired charge amount or max charge in hour
@@ -59,3 +63,5 @@ class ActiveVehicle:
                 charge_amount * kwh_cents_per_hour
             )
         )
+        if vehicle_job_skipped is not None:
+            self.activities.append(VehicleSkipJobActivity(vehicle_job_skipped.earning_opportunity_dollars))

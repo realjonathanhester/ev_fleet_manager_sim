@@ -46,7 +46,8 @@ class FleetManagerSimulator:
             vehicle_job = self.vehicle_jobs.get(vehicle_id).get(hour)
             energy_price = self.energy_prices[hour]
             charge_amount = self.fleet_manager.assign_charge_instructions(hour, vehicle, vehicle_job, energy_price)
+            # we use charge amount > 0 to indicate vehicle should charge instead of working
             if charge_amount > 0:
-                vehicle.do_charge(hour, charge_amount, vehicle.vehicle_specs.charge_rate_kw, energy_price)
+                vehicle.do_charge(hour, charge_amount, vehicle.vehicle_specs.charge_rate_kw, energy_price, vehicle_job)
             elif vehicle_job is not None:
                 vehicle.do_work(hour, vehicle_job)
