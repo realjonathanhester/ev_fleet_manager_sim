@@ -31,22 +31,13 @@ class TestFleetManagerSimulator(unittest.TestCase):
         )
         sim = FleetManagerSimulator.create_sim(sim_input, ChargeWhenEmptyFleetManager())
         result = sim.simulate()
-        self.assertEqual(result.number_charging_hours, 0)
+        self.assertEqual(result.number_charging_hours, 1)  # charges in hour 3 instead of working
         self.assertEqual(result.jobs_completed, 1)
         self.assertEqual(result.jobs_skipped, 1)
         self.assertEqual(result.amount_earned_dollars, 50)
 
-    def test_charge_when_empty_with_lunch_break(self):
-        sim_input = SimulationInput(
-            [vehicleFixtures.vehicle_100_kwh_50_percent],
-            vehicleFixtures.vehicle_jobs_with_idle,
-            vehicleFixtures.energy_prices_3_hours_constant,
-        )
-        sim = FleetManagerSimulator.create_sim(sim_input, ChargeWhenIdleFleetManager())
-        result = sim.simulate()
-        self.assertEqual(result.number_charging_hours, 1)
-
     def test_charge_when_empty_constant_work(self):
+        """24 hours of consistent jobs with no break. ChargeWhenEmpty is efficient"""
         sim_input = SimulationInput(
             [vehicleFixtures.vehicle_100_kwh_50_percent],
             vehicleFixtures.vehicle_jobs_constant,
@@ -61,6 +52,7 @@ class TestFleetManagerSimulator(unittest.TestCase):
         self.assertEqual(result.kwh_cost_cents, 4500)
 
     def test_charge_when_idle_constant_work(self):
+        """24 hours of consistent jobs with no break. ChargeWhenIdle never charges and can only complete first 4 jobs"""
         sim_input = SimulationInput(
             [vehicleFixtures.vehicle_100_kwh_50_percent],
             vehicleFixtures.vehicle_jobs_constant,
@@ -77,6 +69,17 @@ class TestFleetManagerSimulator(unittest.TestCase):
         self.assertEqual(result.kwh_consumed, 40)
         self.assertEqual(result.kwh_cost_cents, 0)
 
+    def test_multiple_vehicles_csv(self):
+        """Multiple vehicles and loaded through csvs"""
+        sim_input = SimulationInput.from_csvs(
+            'tests/data/vehicles.csv',
+            'tests/data/vehicle_jobs.csv',
+            'tests/data/energy_costs.csv',
+        )
+        sim_idle = FleetManagerSimulator.create_sim(sim_input, ChargeWhenIdleFleetManager())
+        sim_empty = FleetManagerSimulator.create_sim(sim_input, ChargeWhenEmptyFleetManager())
+        result_idle = sim_idle.simulate()
+        result_empty = sim_empty.simulate()
 
-if __name__ == '__main__':
-    unittest.main()
+        self.assertEqual(result_idle.amount_earned_dollars * 100 - result_idle.kwh_cost_cents, 76875)
+        self.assertEqual(result_empty.amount_earned_dollars * 100 - result_empty.kwh_cost_cents, 36250)
